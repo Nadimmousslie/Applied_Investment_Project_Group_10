@@ -1,0 +1,40 @@
+# Données WRDS : licence interdisant la redistribution, fichiers lourds
+data/raw/
+data/processed/
+*.parquet
+*.csv
+*.dta
+*.sas7bdat
+*.feather
+*.pkl
+
+# Secrets et identifiants
+.env
+.pgpass
+*.key
+secrets*
+
+# Environnements Python
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Fichiers système et éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Fichiers temporaires LaTeX / Word
+*.aux
+*.log
+*.out
+*.synctex.gz
+~$*
+
+# On garde la structure des dossiers vides
+!data/raw/.gitkeep
+!data/processed/.gitkeep
