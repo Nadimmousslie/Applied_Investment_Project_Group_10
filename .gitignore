@@ -1,12 +1,13 @@
 # Données WRDS : licence interdisant la redistribution, fichiers lourds
-data/raw/
-data/processed/
+data/raw/*
+data/clean/*
 *.parquet
 *.csv
 *.dta
 *.sas7bdat
 *.feather
 *.pkl
+!output/tables/*.csv
 
 # Secrets et identifiants
 .env
@@ -37,4 +38,4 @@ Thumbs.db
 
 # On garde la structure des dossiers vides
 !data/raw/.gitkeep
-!data/processed/.gitkeep
+!data/clean/.gitkeep

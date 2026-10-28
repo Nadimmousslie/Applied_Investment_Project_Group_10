@@ -1,79 +1,101 @@
-# Stratégie multi-signaux « turnover-aware » sur actions américaines
+# QVMM — Quality Momentum, Volatility-Managed
 
-Projet du cours *Applied Investment* : construction et évaluation d'une stratégie d'investissement sur actions américaines, présentée sous forme d'un mini-article scientifique et d'une présentation de 15 minutes devant un comité d'investissement.
+Projet du cours *Applied Investment* (HEC Lausanne) : construction et évaluation d'une stratégie long/short sur actions américaines, présentée sous forme d'un mini-article scientifique et d'une présentation de 15 minutes devant un comité d'investissement.
 
 - **Rendu de l'article** : vendredi 13 novembre 2026, 23h59 (20 pages maximum hors tableaux, graphiques et références)
-- **Présentation orale** : 15 minutes, en classe
-- **Groupe** : _[noms des membres]_
+- **Présentation orale** : 15 minutes, en classe (date communiquée plus tard)
+- **Groupe** : _[10 - Nadim MOUSSLIE Léonard PERIGAULT Matteo GIRAUD Laura PINTO Livio ]_
+- **Document de référence** : `QVMM_Roadmap_finale.pdf` (version du 28 octobre 2026). En cas de doute, la roadmap fait foi.
 
 ---
 
 ## 1. Objectif
 
-Déterminer si une stratégie long-short sur actions américaines est « worthwhile » du point de vue d'un gérant : génère-t-elle un alpha significatif contre les modèles à facteurs usuels, et cet alpha survit-il aux coûts de transaction ?
+Déterminer si une stratégie long/short sur actions américaines est « worthwhile » du point de vue d'un gérant.
 
-Objectif de performance : **alpha d'au moins 0,5 % par mois** (brut, pondération égale), avec une t-statistique supérieure à 3. L'alpha net de coûts et la capacité de la stratégie sont rapportés de façon transparente.
+**Question de recherche** : à exposition fixe 100 % long / 100 % short, un gérant peut-il obtenir un alpha positif et un meilleur rendement ajusté du risque en sélectionnant les actions sur le **Momentum** et la **Quality**, puis en utilisant la **volatilité** pour gérer le risque ? Et vaut-il mieux utiliser la volatilité pour *filtrer* les titres, pour les *pondérer*, ou les deux ?
+
+**Critères de jugement** : Sharpe et ratio d'information après coûts, alpha FF5 + Momentum (Newey-West), test de spanning face au momentum classique, comportement dans les crashs, stabilité hors échantillon. Aucun objectif d'alpha n'est fixé à l'avance : les règles sont figées avant de regarder les résultats.
 
 ## 2. Résumé de la stratégie
 
-1. **Univers** : actions ordinaires CRSP (NYSE, AMEX, Nasdaq), délistings inclus. Version « tradable » (prix > 5 $, capitalisation > 20e percentile NYSE) et version « tous titres » en robustesse.
-2. **Signaux**, regroupés en quatre blocs :
-   - émissions et investissement : croissance des actifs, émissions nettes d'actions, accruals ;
-   - qualité : gross profits / actifs, ROA ;
-   - information et prix : surprise de résultats (SUE), momentum 12-2 ;
-   - risque : volatilité idiosyncratique, bêta.
-3. **Score composite** : winsorisation, rangs en pourcentile, neutralisation par industrie (FF48), moyenne par bloc puis entre blocs.
-4. **Portefeuilles** : déciles avec points de rupture NYSE, long décile 10 / short décile 1, pondération égale et par capitalisation plafonnée, neutralité de bêta.
-5. **Contrôle du turnover** : bandes de non-transaction et lissage du score.
-6. **Gestion du risque** : volatility targeting et overlay de régime optionnel, testé uniquement hors échantillon.
-7. **Coûts** : demi-spread et impact de marché, alpha net et capacité.
-8. **Évaluation** : alphas contre CAPM, FF3, FF5 et FF5 + momentum (erreurs standard Newey-West), Sharpe, drawdown, test GRS, Fama-MacBeth, sous-périodes et avant/après publication.
+1. **Mandat** : 100 % long / 100 % short, rebalancement mensuel, exposition nette nulle (le produit des ventes à découvert reste en collatéral). Pas de dérivés, pas de signal macro.
+2. **Univers** : actions ordinaires de sociétés US cotées sur NYSE, AMEX ou NASDAQ (format CRSP CIZ), hors financières (SIC 6000–6999), prix ≥ 5 $, capitalisation ≥ 20e percentile NYSE, délistings inclus.
+3. **Signaux de sélection** :
+   - **Momentum 12-1** : rendement cumulé de t−12 à t−2 ;
+   - **Quality** : Operating Profitability de Fama-French (2015), avec la règle de juin (comptes de l'année y utilisés de fin juin y+1 à fin mai y+2).
+4. **Score** : 0,5 × rang(MOM) + 0,5 × rang(OP). Long = décile supérieur, short = décile inférieur, points de coupure NYSE.
+5. **Gestion du risque par la volatilité** (126 jours de rendements journaliers) :
+   - **filtre** : on retire le quintile le plus volatil de tout l'univers éligible ;
+   - **pondération** : poids proportionnels à 1/σ dans chaque jambe.
+6. **Pondération** : VW (baseline), EW (contrôle), inverse-vol ; plafond de 5 % par titre (EW si la jambe compte moins de 20 titres).
+7. **Horse race** :
+
+| Portefeuille | Sélection | Filtre de vol | Pondération |
+|---|---|---|---|
+| P1 Traditional MOM | Momentum seul | Non | VW, EW |
+| P2 Quality MOM | Momentum × Quality | Non | VW, EW |
+| P3 Filtered Q-MOM | Momentum × Quality | Oui | VW, EW |
+| P4 Weighted Q-MOM | Momentum × Quality | Non | Inverse-vol |
+| **P5 QVMM** | Momentum × Quality | Oui | Inverse-vol |
+| P5-B | Comme P5 + règle 10 %/20 % | Oui | Inverse-vol |
+
+8. **Évaluation** : performance et risque ; alphas CAPM, FF3, FF5, FF5 + MOM et modèle q (Newey-West, 6 lags) ; ratio d'information ; spanning de P5 sur FF5 + MOM + P1 ; test GRS ; déciles, double tri 3×3 et Fama-MacBeth (méthodes du cours) ; coûts de transaction ; sous-périodes (1975–1999, 2000–2025, 2015–2025) et crashs (2001, 2009, 2020) ; robustesse (large caps, momentum 6-1).
 
 ## 3. Structure du dépôt
 
 ```
-projet-strategie/
+qvmm/
 ├── README.md
-├── requirements.txt
+├── QVMM_Roadmap_finale.pdf     # document de référence
 ├── .gitignore
-├── config.py                 # paramètres centraux (dates, filtres, seuils, chemins)
-├── data/
-│   ├── raw/                  # extractions WRDS (non versionnées)
-│   └── processed/            # bases nettoyées (non versionnées)
-├── src/
-│   ├── 01_load.py            # chargement CRSP, Compustat, liens, facteurs FF
-│   ├── 02_clean.py           # filtres, délistings, alignement des dates (lags)
-│   ├── 03_signals.py         # construction des signaux et du score composite
-│   ├── 04_portfolios.py      # déciles NYSE, pondérations, bandes de turnover
-│   ├── 05_evaluate.py        # alphas, Sharpe, GRS, Fama-MacBeth
-│   ├── 06_costs.py           # spreads, impact, alpha net, capacité
-│   ├── 07_robustness.py      # sous-périodes, hors échantillon, variantes
-│   └── 08_export.py          # tableaux et graphiques pour l'article
-├── outputs/
+├── code/
+│   ├── requirements.txt
+│   ├── 00_config.py            # TOUS les paramètres (dates, filtres, seuils, portefeuilles, coûts)
+│   ├── 01_extract_wrds.py      # CRSP CIZ mensuel + journalier, Compustat, CCM, facteurs French
+│   ├── 02_crsp_clean.py        # univers, ME, flag NYSE, SIC -> data/clean/crsp_m.parquet
+│   ├── 03_compustat_op.py      # BE, OP, règle de juin, lien CCM -> data/clean/op.parquet
+│   ├── 04_signals.py           # MOM 12-1, sigma 126 j, merge OP, rendement t+1 -> panel.parquet
+│   ├── 05_portfolios.py        # build_portfolio(...) : P1 à P5-B, poids, rendements, turnover
+│   ├── 06_course_tests.py      # Tableau 1, déciles, double tri 3x3, Fama-MacBeth
+│   ├── 07_performance.py       # métriques, alphas NW, IR, spanning, GRS
+│   ├── 08_costs.py             # turnover du cours, coûts nets, break-even, règle 10 %/20 %
+│   ├── 09_periods_crashes.py   # sous-périodes, épisodes de crash, bêtas Dimson par jambe
+│   ├── 10_robustness.py        # variantes via build_portfolio avec d'autres paramètres
+│   └── 11_figures.py           # figures de l'article
+├── data/                       # non versionné
+│   ├── raw/                    # extractions WRDS + facteurs (parquet)
+│   │   └── crsp_daily/         # un fichier par année
+│   └── clean/                  # bases nettoyées
+├── output/
 │   ├── tables/
 │   └── figures/
-├── text/
-│   ├── paper/                # article
-│   └── presentation/         # diapositives
-└── tests/                    # contrôles de cohérence (vs Ken French)
+└── text/
+    ├── paper/                  # article
+    └── presentation/           # diapositives
 ```
+
+État d'avancement : `00_config.py` et `01_extract_wrds.py` sont écrits ; les scripts 02 à 11 sont à venir.
 
 ## 4. Données
 
-| Source | Contenu | Tables |
+| Source | Contenu | Tables / fichiers |
 |---|---|---|
-| CRSP (WRDS) | rendements, prix, capitalisation, délistings, données quotidiennes | `msf`, `msenames`, `msedelist`, `dsf` |
-| Compustat (WRDS) | comptabilité annuelle et trimestrielle | `funda`, `fundq` |
-| Lien CRSP-Compustat | correspondance des identifiants | `ccmxpf_linktable` |
-| Ken French Data Library | facteurs FF3, FF5, momentum, industries FF48 | fichiers en ligne |
+| CRSP CIZ (WRDS) | rendements mensuels (délisting inclus), prix, shrout, capitalisation, bid, ask, volume, flags des titres, SIC | `crsp.msf_v2` |
+| CRSP CIZ (WRDS) | rendements journaliers (volatilité, bêtas) | `crsp.dsf_v2` |
+| Compustat (WRDS) | comptes annuels (OP, BE) | `comp.funda` |
+| Lien CRSP–Compustat | correspondance gvkey / permno | `crsp.ccmxpf_linktable` |
+| Kenneth French Data Library | FF5, Momentum (mensuels), FF3 (journaliers) | fichiers en ligne, téléchargés par `01_extract_wrds.py` |
+| Hou-Xue-Zhang | q-factors mensuels | à télécharger à la main sur global-q.org, dans `data/raw/` |
 
-**Période** : 1963-2025 (minimum acceptable : environ 2000-2025).
+**Période** : rendements de janvier 1975 à décembre 2025 (51 ans) ; données à partir de 1972 (CRSP) et 1970 (Compustat) pour initialiser les signaux.
 
 **Règles de qualité appliquées**
-- les valeurs manquantes ne sont jamais remplacées par zéro ;
-- décalage de 6 mois pour les variables comptables annuelles et de 3 à 4 mois pour les trimestrielles (pas de look-ahead) ;
+- format CRSP **CIZ** (l'ancien format msf / msedelist n'est plus mis à jour après 2024) ; noms de colonnes à aligner sur le code du prof ;
+- les valeurs manquantes ne sont jamais remplacées par zéro (seule exception : postes de coûts de l'OP, règle Fama-French) ;
+- règle de juin pour les comptes annuels ; momentum qui saute t−1 ; volatilité calculée jusqu'à t ; rendement en t+1 (pas de look-ahead) ;
 - rendements de délisting intégrés pour éviter le biais de survie ;
-- actions ordinaires uniquement (`shrcd` 10 et 11).
+- firmes présentes depuis au moins 2 ans dans Compustat (biais de backfill).
 
 > **Important** : les données WRDS ne sont pas redistribuables. Le dossier `data/` est exclu du dépôt (voir `.gitignore`).
 
@@ -81,49 +103,76 @@ projet-strategie/
 
 ```bash
 git clone <url-du-depot>
-cd projet-strategie
+cd qvmm
 python -m venv .venv
 source .venv/bin/activate        # Windows : .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r code/requirements.txt
 ```
 
-**Connexion WRDS** : ne jamais écrire ses identifiants dans le code. Utiliser les variables d'environnement `WRDS_USERNAME` et `WRDS_PASSWORD`, ou le fichier `~/.pgpass`.
+**Connexion WRDS** : ne jamais écrire ses identifiants dans le code. Utiliser la variable d'environnement `WRDS_USERNAME` (le mot de passe est demandé à la première connexion et peut être enregistré dans `~/.pgpass`).
 
 ## 6. Exécution
 
-Les scripts s'enchaînent dans l'ordre numérique. Chacun lit les sorties de l'étape précédente.
+Les scripts s'enchaînent dans l'ordre numérique. Chacun lit les fichiers parquet de l'étape précédente, ce qui évite de tout relancer.
 
 ```bash
-python src/01_load.py
-python src/02_clean.py
-python src/03_signals.py
-python src/04_portfolios.py
-python src/05_evaluate.py
-python src/06_costs.py
-python src/07_robustness.py
-python src/08_export.py
+cd code
+python 01_extract_wrds.py --skip-daily   # mensuel, Compustat, CCM, facteurs French
+python 01_extract_wrds.py --only daily   # journalier (long ; reprend là où il s'est arrêté)
+python 02_crsp_clean.py
+python 03_compustat_op.py
+python 04_signals.py
+python 05_portfolios.py
+python 06_course_tests.py
+python 07_performance.py
+python 08_costs.py
+python 09_periods_crashes.py
+python 10_robustness.py
+python 11_figures.py
 ```
 
-Tous les paramètres de conception (dates, filtres, nombre de portefeuilles, seuils des bandes, graine aléatoire) sont définis dans `config.py`, ce qui documente les choix faits avant les tests.
+Tous les choix de conception (dates, filtres, points de coupure, seuil du filtre de vol, plafond, portefeuilles, grille de coûts, sous-périodes, crashs) sont définis dans `00_config.py`. Ils sont fixés avant les tests ; les variantes de robustesse passent d'autres valeurs en argument sans modifier ce fichier.
 
-## 7. Résultats
+**Contrôle bloquant** : P1-VW doit avoir une corrélation d'au moins 0,8 avec le facteur UMD de French. Tant que ce contrôle ne passe pas, on ne construit pas P2 à P5.
 
-_À compléter une fois les analyses terminées : alphas bruts et nets, Sharpe, drawdown, capacité._
+## 7. Calendrier
 
-## 8. Bonnes pratiques de collaboration
+| Dates | Étape |
+|---|---|
+| 28 oct. | Extraction au CDIF, mail au prof |
+| 29 – 31 oct. | Univers, OP, signaux, Tableau 1 |
+| 1 – 2 nov. | P1 et **contrôle contre UMD** (jalon) |
+| 3 – 6 nov. | P2 à P5, tests du cours, alphas, spanning, GRS |
+| 7 – 8 nov. | Coûts, sous-périodes, crashs, robustesse |
+| 9 – 12 nov. | Rédaction des résultats, figures finales, relecture |
+| **13 nov., 23h59** | **Remise de l'article** |
 
-- une branche par fonctionnalité (`signals`, `costs`, etc.), fusionnée par pull request relue par un coéquipier ;
+La rédaction (introduction, littérature, données, méthodologie) avance en parallèle du code dès la première semaine.
+
+## 8. Résultats
+
+_À compléter une fois les analyses terminées : performance de P1 à P5, alphas et ratios d'information, spanning, coûts et break-even, crashs._
+
+## 9. Bonnes pratiques de collaboration
+
+- une branche par étape (`extract`, `signals`, `portfolios`, `costs`, etc.), fusionnée par pull request relue par un coéquipier ;
 - commits courts et explicites ;
 - ne pas travailler à plusieurs sur le même fichier en parallèle ;
-- versions des paquets fixées dans `requirements.txt` et graine aléatoire fixée dans `config.py`.
+- versions des paquets fixées dans `code/requirements.txt` ;
+- toute modification d'un paramètre de `00_config.py` est discutée en groupe et justifiée dans le commit.
 
-## 9. Références
+## 10. Références principales
 
-- Cooper, M. J., Gulen, H., et Schill, M. J. (2008). *Asset Growth and the Cross-Section of Stock Returns*. Journal of Finance.
-- Fama, E. F., et French, K. R. (1993, 2015). Modèles à trois et cinq facteurs.
+- Jegadeesh, N., et Titman, S. (1993). *Returns to Buying Winners and Selling Losers*. Journal of Finance.
+- Novy-Marx, R. (2013). *The Other Side of Value: The Gross Profitability Premium*. Journal of Financial Economics.
+- Fama, E. F., et French, K. R. (2015). *A Five-Factor Asset Pricing Model*. Journal of Financial Economics.
+- Barroso, P., et Santa-Clara, P. (2015). *Momentum Has Its Moments*. Journal of Financial Economics.
+- Daniel, K., et Moskowitz, T. (2016). *Momentum Crashes*. Journal of Financial Economics.
+- Stambaugh, R., et Yuan, Y. (2017). *Mispricing Factors*. Review of Financial Studies.
 - Supports du cours : Strategies, Factor models, Trading costs, Aggregate predictability.
 
-## 10. Licence et avertissement
+La bibliographie complète est dans la roadmap (section 16).
+
+## 11. Licence et avertissement
 
 Projet académique réalisé dans le cadre d'un cours. Les résultats ne constituent pas un conseil en investissement.
-
