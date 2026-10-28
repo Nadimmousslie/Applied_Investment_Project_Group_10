@@ -3,6 +3,5 @@ numpy
 pyarrow
 wrds
 requests
-statsmodels
+scipy
 matplotlib
-

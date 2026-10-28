@@ -51,6 +51,8 @@ qvmm/
 ├── .gitignore
 ├── code/
 │   ├── requirements.txt
+│   ├── main.py                 # lance toute la chaîne (02 -> 11) en une commande
+│   ├── lib.py                  # fonctions communes (build_portfolio, Newey-West, GRS, tableaux, figures)
 │   ├── 00_config.py            # TOUS les paramètres (dates, filtres, seuils, portefeuilles, coûts)
 │   ├── 01_extract_wrds.py      # CRSP CIZ mensuel + journalier, Compustat, CCM, facteurs French
 │   ├── 02_crsp_clean.py        # univers, ME, flag NYSE, SIC -> data/clean/crsp_m.parquet
@@ -75,7 +77,7 @@ qvmm/
     └── presentation/           # diapositives
 ```
 
-État d'avancement : `00_config.py` et `01_extract_wrds.py` sont écrits ; les scripts 02 à 11 sont à venir.
+État d'avancement : tous les scripts (00 à 11, `lib.py`, `main.py`) sont écrits et testés sur données synthétiques ; reste à les lancer sur les données WRDS.
 
 ## 4. Données
 
@@ -116,19 +118,15 @@ pip install -r code/requirements.txt
 Les scripts s'enchaînent dans l'ordre numérique. Chacun lit les fichiers parquet de l'étape précédente, ce qui évite de tout relancer.
 
 ```bash
-cd code
-python 01_extract_wrds.py --skip-daily   # mensuel, Compustat, CCM, facteurs French
-python 01_extract_wrds.py --only daily   # journalier (long ; reprend là où il s'est arrêté)
-python 02_crsp_clean.py
-python 03_compustat_op.py
-python 04_signals.py
-python 05_portfolios.py
-python 06_course_tests.py
-python 07_performance.py
-python 08_costs.py
-python 09_periods_crashes.py
-python 10_robustness.py
-python 11_figures.py
+# une seule fois (accès WRDS requis)
+python code/01_extract_wrds.py --skip-daily   # mensuel, Compustat, CCM, facteurs French
+python code/01_extract_wrds.py --only daily   # journalier (long ; reprend là où il s'est arrêté)
+
+# toute l'analyse, tableaux et figures
+python code/main.py                 # 02 -> 11
+python code/main.py --from 5        # reprendre à une étape
+python code/main.py --only 7        # un seul script
+python code/main.py --optional      # + robustesses optionnelles
 ```
 
 Tous les choix de conception (dates, filtres, points de coupure, seuil du filtre de vol, plafond, portefeuilles, grille de coûts, sous-périodes, crashs) sont définis dans `00_config.py`. Ils sont fixés avant les tests ; les variantes de robustesse passent d'autres valeurs en argument sans modifier ce fichier.
