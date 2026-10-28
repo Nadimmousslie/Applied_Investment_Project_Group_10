@@ -5,7 +5,7 @@ Projet du cours *Applied Investment* (HEC Lausanne) : construction et évaluatio
 - **Rendu de l'article** : vendredi 13 novembre 2026, 23h59 (20 pages maximum hors tableaux, graphiques et références)
 - **Présentation orale** : 15 minutes, en classe (date communiquée plus tard)
 - **Groupe** : _[10 - Nadim MOUSSLIE Léonard PERIGAULT Matteo GIRAUD Laura PINTO Livio ]_
-- **Document de référence** : `QVMM_Roadmap_finale.pdf` (version du 28 octobre 2026). En cas de doute, la roadmap fait foi.
+- **Documents de référence** : `QVMM_Roadmap_finale.pdf` (stratégie, version du 28 octobre 2026 ; en cas de doute, la roadmap fait foi) et `QVMM_Guide_donnees_CDIF.pdf` (quelles données télécharger au CDIF et comment les brancher au code).
 
 ---
 
@@ -47,7 +47,8 @@ Déterminer si une stratégie long/short sur actions américaines est « worthwh
 ```
 qvmm/
 ├── README.md
-├── QVMM_Roadmap_finale.pdf     # document de référence
+├── QVMM_Roadmap_finale.pdf     # document de référence (stratégie)
+├── QVMM_Guide_donnees_CDIF.pdf # guide de téléchargement des données WRDS
 ├── .gitignore
 ├── code/
 │   ├── requirements.txt
@@ -55,6 +56,7 @@ qvmm/
 │   ├── lib.py                  # fonctions communes (build_portfolio, Newey-West, GRS, tableaux, figures)
 │   ├── 00_config.py            # TOUS les paramètres (dates, filtres, seuils, portefeuilles, coûts)
 │   ├── 01_extract_wrds.py      # CRSP CIZ mensuel + journalier, Compustat, CCM, facteurs French
+│   ├── 01b_import_csv.py       # alternative : import des CSV téléchargés à la main sur WRDS
 │   ├── 02_crsp_clean.py        # univers, ME, flag NYSE, SIC -> data/clean/crsp_m.parquet
 │   ├── 03_compustat_op.py      # BE, OP, règle de juin, lien CCM -> data/clean/op.parquet
 │   ├── 04_signals.py           # MOM 12-1, sigma 126 j, merge OP, rendement t+1 -> panel.parquet
@@ -67,17 +69,19 @@ qvmm/
 │   └── 11_figures.py           # figures de l'article
 ├── data/                       # non versionné
 │   ├── raw/                    # extractions WRDS + facteurs (parquet)
+│   │   ├── csv/                # CSV téléchargés sur le site WRDS (entrée de 01b_import_csv.py)
 │   │   └── crsp_daily/         # un fichier par année
 │   └── clean/                  # bases nettoyées
 ├── output/
-│   ├── tables/
-│   └── figures/
+│   ├── portfolios/             # rendements et poids de chaque portefeuille (non versionné)
+│   ├── tables/                 # T0 à T11, en .csv et .tex
+│   └── figures/                # F1 à F6, en .png et .pdf
 └── text/
     ├── paper/                  # article
     └── presentation/           # diapositives
 ```
 
-État d'avancement : tous les scripts (00 à 11, `lib.py`, `main.py`) sont écrits et testés sur données synthétiques ; reste à les lancer sur les données WRDS.
+État d'avancement : tous les scripts (00 à 11, `01b`, `lib.py`, `main.py`) sont écrits et testés sur données synthétiques ; reste à les lancer sur les données WRDS (téléchargement au CDIF le 28 octobre).
 
 ## 4. Données
 
@@ -87,13 +91,17 @@ qvmm/
 | CRSP CIZ (WRDS) | rendements journaliers (volatilité, bêtas) | `crsp.dsf_v2` |
 | Compustat (WRDS) | comptes annuels (OP, BE) | `comp.funda` |
 | Lien CRSP–Compustat | correspondance gvkey / permno | `crsp.ccmxpf_linktable` |
-| Kenneth French Data Library | FF5, Momentum (mensuels), FF3 (journaliers) | fichiers en ligne, téléchargés par `01_extract_wrds.py` |
-| Hou-Xue-Zhang | q-factors mensuels | à télécharger à la main sur global-q.org, dans `data/raw/` |
+| Kenneth French Data Library | FF5, Momentum (mensuels), FF3 (journaliers) | téléchargés automatiquement (`01_extract_wrds.py --only french`) ; déjà dans `data/raw/` |
+| Hou-Xue-Zhang | q-factors mensuels | fichier *q5 factors, monthly* sur global-q.org, renommé `q5_factors_monthly.csv`, dans `data/raw/` |
+
+**Deux façons d'obtenir les données WRDS** (détail dans `QVMM_Guide_donnees_CDIF.pdf`) :
+- **extraction Python** avec `01_extract_wrds.py`, si l'accès WRDS en Python est possible ;
+- **téléchargement sur le site WRDS** en CSV (clé USB), copié dans `data/raw/csv/` sous les noms `crsp_monthly.csv`, `compustat.csv`, `ccm_link.csv`, `crsp_daily/*.csv` (et `crsp_delist.csv` pour l'ancien format CRSP), puis converti avec `01b_import_csv.py`. Le format CIZ et l'ancien format CRSP sont reconnus automatiquement.
 
 **Période** : rendements de janvier 1975 à décembre 2025 (51 ans) ; données à partir de 1972 (CRSP) et 1970 (Compustat) pour initialiser les signaux.
 
 **Règles de qualité appliquées**
-- format CRSP **CIZ** (l'ancien format msf / msedelist n'est plus mis à jour après 2024) ; noms de colonnes à aligner sur le code du prof ;
+- format CRSP **CIZ** de préférence (l'ancien format msf / msedelist n'est plus mis à jour après 2024, mais reste accepté par `01b_import_csv.py`) ; noms de colonnes à aligner sur le code du prof ;
 - les valeurs manquantes ne sont jamais remplacées par zéro (seule exception : postes de coûts de l'OP, règle Fama-French) ;
 - règle de juin pour les comptes annuels ; momentum qui saute t−1 ; volatilité calculée jusqu'à t ; rendement en t+1 (pas de look-ahead) ;
 - rendements de délisting intégrés pour éviter le biais de survie ;
@@ -118,9 +126,11 @@ pip install -r code/requirements.txt
 Les scripts s'enchaînent dans l'ordre numérique. Chacun lit les fichiers parquet de l'étape précédente, ce qui évite de tout relancer.
 
 ```bash
-# une seule fois (accès WRDS requis)
+# une seule fois : SOIT extraction Python (accès WRDS requis)...
 python code/01_extract_wrds.py --skip-daily   # mensuel, Compustat, CCM, facteurs French
 python code/01_extract_wrds.py --only daily   # journalier (long ; reprend là où il s'est arrêté)
+# ...SOIT import des CSV téléchargés sur le site WRDS (mis dans data/raw/csv/, voir l'en-tête du script)
+python code/01b_import_csv.py
 
 # toute l'analyse, tableaux et figures
 python code/main.py                 # 02 -> 11
@@ -137,19 +147,31 @@ Tous les choix de conception (dates, filtres, points de coupure, seuil du filtre
 
 | Dates | Étape |
 |---|---|
-| 28 oct. | Extraction au CDIF, mail au prof |
-| 29 – 31 oct. | Univers, OP, signaux, Tableau 1 |
-| 1 – 2 nov. | P1 et **contrôle contre UMD** (jalon) |
-| 3 – 6 nov. | P2 à P5, tests du cours, alphas, spanning, GRS |
-| 7 – 8 nov. | Coûts, sous-périodes, crashs, robustesse |
-| 9 – 12 nov. | Rédaction des résultats, figures finales, relecture |
+| 28 oct. | Code complet ; téléchargement des données au CDIF ; mail au prof |
+| 29 oct. | Import des données, `main.py`, **contrôle P1 contre UMD** (jalon) ; corrections éventuelles |
+| 30 oct. – 2 nov. | Rédaction : introduction, littérature, données (T1, F1), méthodologie |
+| 3 – 6 nov. | Rédaction des résultats : tests du cours, horse race, alphas, spanning |
+| 7 – 8 nov. | Coûts, sous-périodes, crashs, robustesse ; robustesses optionnelles si le temps le permet |
+| 9 – 12 nov. | Conclusion, figures finales, relecture, comptage des pages |
 | **13 nov., 23h59** | **Remise de l'article** |
 
 La rédaction (introduction, littérature, données, méthodologie) avance en parallèle du code dès la première semaine.
 
 ## 8. Résultats
 
-_À compléter une fois les analyses terminées : performance de P1 à P5, alphas et ratios d'information, spanning, coûts et break-even, crashs._
+`main.py` produit les tableaux et figures du rapport dans `output/` :
+
+| Section du rapport | Tableaux et figures |
+|---|---|
+| Contrôle (annexe) | T0 : P1 contre UMD |
+| 3. Données | T1 description, T1b corrélations, F1 nombre de titres |
+| 5.1 Tests du cours (H1) | T2a/T2b déciles, T3 double tri 3×3, T4 Fama-MacBeth |
+| 5.2 Horse race | T5 performance, F2 richesse cumulée, F3 drawdowns, F4 volatilité glissante |
+| 5.3 Alphas et spanning | T6 alphas (CAPM → q), T6b expositions, T6c GRS, T7 spanning |
+| 5.4 Coûts | T8 coûts et break-even, T8b demi-spread, F6 Sharpe net |
+| 6. Robustesse | T9 sous-périodes, T10 et F5 crashs, T11 robustesse |
+
+_Principaux chiffres à compléter une fois les analyses lancées sur les données WRDS._
 
 ## 9. Bonnes pratiques de collaboration
 
