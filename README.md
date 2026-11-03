@@ -22,7 +22,7 @@ Déterminer si une stratégie long/short sur actions américaines est « worthwh
 1. **Mandat** : 100 % long / 100 % short, rebalancement mensuel, exposition nette nulle (le produit des ventes à découvert reste en collatéral). Pas de dérivés, pas de signal macro.
 2. **Univers** : actions ordinaires de sociétés US cotées sur NYSE, AMEX ou NASDAQ (format CRSP CIZ), hors financières (SIC 6000–6999), prix ≥ 5 $, capitalisation ≥ 20e percentile NYSE, délistings inclus.
 3. **Signaux de sélection** :
-   - **Momentum 12-1** : rendement cumulé de t−12 à t−2 ;
+   - **Momentum 12-1** : rendement cumulé de t−12 à t−2, t étant le mois de détention (comme UMD) ; dans le code, t est la date de formation, soit t−11 à t−1 ;
    - **Quality** : Operating Profitability de Fama-French (2015), avec la règle de juin (comptes de l'année y utilisés de fin juin y+1 à fin mai y+2).
 4. **Score** : 0,5 × rang(MOM) + 0,5 × rang(OP). Long = décile supérieur, short = décile inférieur, points de coupure NYSE.
 5. **Gestion du risque par la volatilité** (126 jours de rendements journaliers) :

@@ -9,7 +9,8 @@ Timing (roadmap, section 4) : tout ce qui est dans une ligne datée t est connu 
 sauf ret_next / retx_next, qui sont les rendements réalisés en t+1 (à n'utiliser que comme résultat).
 
 Colonnes principales :
-    mom, mom6   momentum 12-1 (t-12..t-2) et 6-1 (t-6..t-2)
+    mom, mom6   momentum 12-1 (t-11..t-1) et 6-1 (t-5..t-1), le mois t étant sauté
+                (avec H = t+1 le mois de détention : H-12..H-2 et H-6..H-2, comme UMD)
     op          Operating Profitability winsorisée 1 %/99 % chaque mois (univers éligible)
     vol         volatilité annualisée : 126 jours de bourse jusqu'à t (repli : 36 mois)
     beta        bêta Dimson sur 126 jours (beta_0 + beta_-1), pour l'analyse des crashs
@@ -47,7 +48,7 @@ def lookup(wide, rows):
 
 
 def momentum(logr, start, skip, min_obs):
-    """Rendement cumulé de t-start à t-skip (ex. 12-1 : start=12, skip=2)."""
+    """Rendement cumulé de t-start à t-skip, t = date de formation (ex. 12-1 : start=11, skip=1)."""
     window = start - skip + 1
     return np.expm1(logr.shift(skip).rolling(window, min_periods=min_obs).sum())
 
@@ -123,7 +124,7 @@ def main():
     logR = np.log1p(R.clip(lower=-0.9999))
     s12, k12 = CFG["mom_window"]
     MOM = momentum(logR, s12, k12, CFG["mom_min_obs"])
-    MOM6 = momentum(logR, 6, 2, 4)
+    MOM6 = momentum(logR, 5, 1, 4)                 # 6-1 : t-5..t-1
     RNEXT, RXNEXT = R.shift(-1), RX.shift(-1)     # rendement réalisé en t+1 (RÉSULTAT, jamais signal)
 
     # ------------------------------------------------ panel aux dates de formation

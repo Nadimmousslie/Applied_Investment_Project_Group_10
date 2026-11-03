@@ -53,7 +53,9 @@ CFG = {
     },
 
     # -------------------------------------------------------------- signaux (section 4)
-    "mom_window": (12, 2),            # rendement cumulé de t-12 à t-2
+    # Momentum 12-1 (UMD de French) : t = date de FORMATION, rendement détenu en t+1.
+    # On cumule t-11..t-1 et on saute le mois t (= mois de détention H, rendements H-12..H-2).
+    "mom_window": (11, 1),            # rendement cumulé de t-11 à t-1 (11 mois)
     "mom_min_obs": 8,                 # au moins 8 rendements valides sur 11
     "op_winsor": (0.01, 0.99),        # winsorisation mensuelle de l'OP
     "op_june_rule": True,             # comptes de l'année civile y utilisés de fin juin y+1 à fin mai y+2
