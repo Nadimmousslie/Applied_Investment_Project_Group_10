@@ -42,6 +42,14 @@ def main():
     # Doublons éventuels (permno, mois) : on garde la dernière observation du mois
     m = m.sort_values(["permno", "date"]).drop_duplicates(["permno", "date"], keep="last")
 
+    # bid/ask mensuels vides : on reprend ceux du dernier jour coté du mois (journalier, 01b_import_csv.py)
+    ba_file = RAW / "crsp_bidask_monthly.parquet"
+    if ba_file.exists() and ("bid" not in m or m["bid"].isna().mean() > 0.5):
+        ba = pd.read_parquet(ba_file)
+        ba["date"] = pd.to_datetime(ba["date"]) + pd.offsets.MonthEnd(0)
+        m = m.drop(columns=[c for c in ("bid", "ask") if c in m]).merge(ba, on=["permno", "date"], how="left")
+        print(f"Bid/ask repris du journalier : {m['bid'].notna().mean():.1%} des lignes couvertes")
+
     # ------------------------------------------------------------------ capitalisation
     m["prc"] = m["prc"].abs()                     # prix négatif CRSP = moyenne bid/ask
     me_calc = m["prc"] * m["shrout"]
@@ -52,7 +60,13 @@ def main():
 
     # ------------------------------------------------------------------ drapeaux
     m["nyse"] = m["primaryexch"].eq("N") if "primaryexch" in m else False
-    sic = pd.to_numeric(m.get("siccd"), errors="coerce")
+    sic = pd.to_numeric(m["siccd"], errors="coerce") if "siccd" in m else pd.Series(np.nan, index=m.index)
+    if CFG["exclude_financials"]:
+        if sic.isna().all():
+            raise SystemExit("SIC (siccd) absent ou vide : impossible d'exclure les financières. "
+                             "Retélécharger CRSP mensuel avec la colonne SICCD.")
+        if sic.isna().mean() > 0.05:
+            print(f"  [ATTENTION] SIC manquant pour {sic.isna().mean():.1%} des lignes : ces titres ne sont pas exclus")
     lo, hi = CFG["sic_fin"]
     m["is_fin"] = sic.between(lo, hi)
     m["price_ok"] = m["prc"] >= CFG["min_price"]

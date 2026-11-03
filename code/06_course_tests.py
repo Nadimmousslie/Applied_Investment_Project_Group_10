@@ -81,7 +81,7 @@ def main():
     })
     t1.index.name = "Décennie"
     save_table(t1, "T1_description", "Description de l'univers éligible par décennie")
-    rc = p.groupby("date").apply(lambda d: d[["mom", "op", "vol"]].rank().corr().to_numpy()[np.triu_indices(3, 1)])
+    rc = p.groupby("date")[["mom", "op", "vol"]].apply(lambda d: d.rank().corr().to_numpy()[np.triu_indices(3, 1)])
     rc = np.nanmean(np.vstack(rc.to_numpy()), axis=0)
     t1b = pd.DataFrame({"Corrélation de rang moyenne": rc}, index=["MOM-OP", "MOM-Vol", "OP-Vol"])
     save_table(t1b, "T1b_correlations", "Corrélations de rang (Spearman) moyennes entre les signaux")

@@ -58,6 +58,13 @@ def daily_vol_beta():
     files = sorted((RAW / "crsp_daily").glob("*.parquet"))
     if not files:
         return None
+    # années nécessaires : de l'année précédant la première formation à la dernière
+    have = {int(f.stem) for f in files if f.stem.isdigit()}
+    need = range(int(CFG["sample_start"][:4]) - 1, int(CFG["sample_end"][:4]) + 1)
+    missing = [y for y in need if y not in have]
+    if missing:
+        print(f"  [ATTENTION] journalier manquant pour {missing} : pas de volatilité ces années-là, "
+              "les titres concernés sortiront de l'univers éligible")
     ff = pd.read_parquet(RAW / "french_ff3_daily.parquet")
     mkt = (ff.set_index("date")["MKT_RF"] + ff.set_index("date")["RF"]).astype("float64")
     W, MINP = CFG["vol_window_days"], CFG["vol_min_obs_days"]
@@ -156,10 +163,16 @@ def main():
         print("Volatilité : SOLUTION DE REPLI (36 mois de rendements mensuels) — pas de journalier trouvé")
 
     # ------------------------------------------------ univers éligible (section 3.2)
-    elig = p["price_ok"] & p["size_ok"] & p["mom"].notna() & p["op"].notna() & (p["be"] > 0) & p["vol"].notna()
+    elig = p["price_ok"] & p["size_ok"] & p["mom"].notna() & p["op"].notna() & (p["be"] > 0)
     if CFG["exclude_financials"]:
         elig &= ~p["is_fin"]
-    p["eligible"] = elig
+    # contrôle : titres éligibles sur tout le reste mais exclus faute de volatilité
+    no_vol = (elig & p["vol"].isna()).groupby(p["date"]).sum() / elig.groupby(p["date"]).sum()
+    bad = no_vol[no_vol > 0.10]
+    if len(bad):
+        print(f"  [ATTENTION] {len(bad)} mois où plus de 10 % des titres sont exclus faute de volatilité "
+              f"(ex. {', '.join(f'{d:%Y-%m}' for d in bad.index[:5])}) : vérifier le journalier")
+    p["eligible"] = elig & p["vol"].notna()
 
     # winsorisation mensuelle de l'OP sur l'univers éligible
     lo_q, hi_q = CFG["op_winsor"]
@@ -182,7 +195,7 @@ def main():
     print(f"Titres éligibles par mois : min {n.min()}, médiane {int(n.median())}, max {n.max()}")
     print("Moyenne par décennie :", n.groupby(n.index.year // 10 * 10).mean().round(0).to_dict())
     print(f"Part NYSE dans l'éligible : {e['nyse'].mean():.1%}")
-    rc = e.groupby("date").apply(lambda g: g[["mom", "op", "vol"]].rank().corr().values[np.triu_indices(3, 1)])
+    rc = e.groupby("date")[["mom", "op", "vol"]].apply(lambda g: g.rank().corr().values[np.triu_indices(3, 1)])
     rc = np.nanmean(np.vstack(rc.to_numpy()), axis=0)
     print(f"Corrélations de rang moyennes : MOM-OP {rc[0]:.2f} | MOM-vol {rc[1]:.2f} | OP-vol {rc[2]:.2f}")
     print(f"ret_next manquant dans l'éligible : {e['ret_next'].isna().mean():.2%} (délistés sans rendement)")

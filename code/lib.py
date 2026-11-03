@@ -164,13 +164,15 @@ def build_portfolio(panel, selection="combo", vol_filter=False, weighting="vw", 
         else:
             score = sw["mom"] * df[mom_col].rank(pct=True) + sw["op"] * df["op"].rank(pct=True)
         ref = score[df["nyse"]] if df["nyse"].sum() >= 20 else score
-        q = ref.quantile([0.1, 0.2, 0.8, 0.9])
+        q = ref.quantile
         perm = df["permno"]
         if buffer:
-            long_m = (score >= q[0.9]) | (perm.isin(prev[1]) & (score >= q[0.8]))
-            short_m = (score <= q[0.1]) | (perm.isin(prev[-1]) & (score <= q[0.2]))
+            b_in, b_out = CFG["buffer_in"], CFG["buffer_out"]
+            long_m = (score >= q(b_in)) | (perm.isin(prev[1]) & (score >= q(b_out)))
+            # round : 1 - 0.9 = 0.0999...98 en flottant, ce qui ferait basculer un titre situé pile sur le seuil
+            short_m = (score <= q(round(1 - b_in, 10))) | (perm.isin(prev[-1]) & (score <= q(round(1 - b_out, 10))))
         else:
-            long_m, short_m = score >= q[0.9], score <= q[0.1]
+            long_m, short_m = score >= q(CFG["long_pct"]), score <= q(CFG["short_pct"])
         short_m &= ~long_m
 
         rec = {"date": t + MONTH}

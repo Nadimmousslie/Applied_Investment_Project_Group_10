@@ -156,17 +156,17 @@ def import_monthly():
 
 # ------------------------------------------------------------------------------- CRSP journalier
 def import_daily():
+    # fichiers dans csv/crsp_daily/ ET fichiers crsp_daily*.csv posés directement dans csv/ (tous, pas seulement le premier)
+    exts = (".csv", ".gz", ".zip", ".txt")
     folder = CSV / "crsp_daily"
-    files = sorted(p for p in folder.glob("*") if p.suffix in (".csv", ".gz", ".zip", ".txt")) if folder.exists() else []
-    if not files:
-        f = find("crsp_daily")
-        files = [f] if f else []
+    files = sorted(p for p in folder.glob("*") if p.suffix in exts) if folder.exists() else []
+    files += sorted(p for p in CSV.glob("crsp_daily*") if p.is_file() and p.suffix in exts)
     if not files:
         print("Pas de CSV journalier : la volatilité sera calculée sur 36 mois (solution de repli).")
         return
     tmp = RAW / "crsp_daily" / "_tmp"
     tmp.mkdir(parents=True, exist_ok=True)
-    part = 0
+    part, ba_parts = 0, []
     for f in files:
         print(f"Journalier : {f.name}")
         for chunk in pd.read_csv(f, chunksize=5_000_000, low_memory=False):
@@ -175,6 +175,13 @@ def import_daily():
                               "date": parse_date(chunk[pick(chunk, "dlycaldt", "date")]),
                               "ret": num(chunk[pick(chunk, "dlyret", "ret")]).astype("float32")}).dropna(subset=["permno", "date"])
             d["permno"] = d["permno"].astype("int64")
+            # bid/ask du dernier jour coté de chaque mois (remplace MthBid/MthAsk s'ils manquent au mensuel)
+            bcol, acol = pick(chunk, "dlybid", "bid"), pick(chunk, "dlyask", "ask")
+            if bcol and acol:
+                ba = d[["permno", "date"]].assign(bid=num(chunk.loc[d.index, bcol]), ask=num(chunk.loc[d.index, acol]))
+                ba = ba[(ba["bid"] > 0) & (ba["ask"] > 0)]
+                ba["month"] = ba["date"] + pd.offsets.MonthEnd(0)
+                ba_parts.append(ba.sort_values("date").groupby(["permno", "month"]).tail(1))
             for y, g in d.groupby(d["date"].dt.year):
                 g.to_parquet(tmp / f"{y}_{part:04d}.parquet", index=False)
             part += 1
@@ -188,6 +195,17 @@ def import_daily():
             p.unlink()
     tmp.rmdir()
     print(f"  -> crsp_daily/ : {len(years)} années ({years[0]} -> {years[-1]})")
+    if ba_parts:
+        # un même mois peut être coupé entre deux blocs : on garde la cotation la plus tardive
+        ba = pd.concat(ba_parts).sort_values("date").groupby(["permno", "month"]).tail(1)
+        ba = ba.drop(columns="date").rename(columns={"month": "date"})
+        ba.to_parquet(RAW / "crsp_bidask_monthly.parquet", index=False)
+        print(f"  -> crsp_bidask_monthly.parquet : bid/ask de fin de mois, {len(ba):,} titres-mois")
+    have = {int(p.stem) for p in (RAW / "crsp_daily").glob("*.parquet") if p.stem.isdigit()}
+    missing = [y for y in range(int(CFG["crsp_start"][:4]), int(CFG["crsp_end"][:4]) + 1) if y not in have]
+    if missing:
+        print(f"  [ATTENTION] années de journalier manquantes : {missing}\n"
+              "  -> sans ces années, les titres n'ont pas de volatilité et sortent de l'univers. Retélécharger.")
 
 
 # ------------------------------------------------------------------------------- Compustat et CCM
