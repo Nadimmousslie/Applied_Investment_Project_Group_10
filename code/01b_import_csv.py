@@ -37,9 +37,9 @@ CSV = RAW / "csv"
 def find(stem):
     for ext in (".csv", ".csv.gz", ".zip", ".txt"):
         f = CSV / f"{stem}{ext}"
-        if f.exists():
+        if f.is_file():
             return f
-    hits = sorted(CSV.glob(f"{stem}*"))
+    hits = sorted(p for p in CSV.glob(f"{stem}*") if p.is_file())   # jamais un dossier (ex. crsp_daily/)
     return hits[0] if hits else None
 
 
@@ -75,7 +75,12 @@ def import_monthly():
     f = find("crsp_monthly")
     if f is None:
         raise SystemExit(f"Fichier introuvable : {CSV}/crsp_monthly.csv")
-    m = read(f)
+    # on ne lit que les colonnes utiles (le fichier « all » de WRDS en a ~90 et pèse plusieurs Go)
+    useful = {"permno", "permco", "mthcaldt", "date", "mthret", "mthretx", "mthprc", "shrout", "mthcap",
+              "mthbid", "mthask", "mthprcbid", "mthprcask", "bid", "ask", "mthvol", "vol", "siccd", "sic", "hsiccd",
+              "sharetype", "securitytype", "securitysubtype", "usincflg", "issuertype", "primaryexch",
+              "conditionaltype", "tradingstatusflg", "ret", "retx", "prc", "shrcd", "exchcd", "dlret"}
+    m = read(f, usecols=lambda c: c.strip().lower() in useful)
     print(f"CRSP mensuel : {f.name}, {len(m):,} lignes, colonnes {list(m.columns)}")
     ciz = "mthret" in m or "mthcaldt" in m
     out = pd.DataFrame({"permno": num(m["permno"]).astype("Int64")})
@@ -169,7 +174,10 @@ def import_daily():
     part, ba_parts = 0, []
     for f in files:
         print(f"Journalier : {f.name}")
-        for chunk in pd.read_csv(f, chunksize=5_000_000, low_memory=False):
+        # colonnes utiles seulement (date, rendement, bid/ask pour les coûts), même si le fichier est un « all »
+        keep = {"permno", "dlycaldt", "date", "dlyret", "ret", "dlybid", "dlyask", "bid", "ask"}
+        for chunk in pd.read_csv(f, chunksize=2_000_000, low_memory=False,
+                                 usecols=lambda c: c.strip().lower() in keep):
             chunk.columns = [c.strip().lower() for c in chunk.columns]
             d = pd.DataFrame({"permno": num(chunk["permno"]),
                               "date": parse_date(chunk[pick(chunk, "dlycaldt", "date")]),
@@ -220,6 +228,11 @@ def import_compustat():
     c["datadate"] = parse_date(c["datadate"])
     need = ["gvkey", "datadate", "fyear", "revt", "cogs", "xsga", "xint", "seq", "ceq", "at", "lt", "txditc",
             "pstkrv", "pstkl", "pstk"]
+    # LT ne sert qu'en dernier recours pour BE (SEQ et CEQ manquants) : facultatif
+    for opt in ("lt", "fyear"):
+        if opt not in c:
+            print(f"  [info] {opt.upper()} absent : mis à vide (impact négligeable)")
+            c[opt] = np.nan
     miss = [x for x in need if x not in c]
     if miss:
         raise SystemExit(f"Compustat : variables manquantes {miss}")

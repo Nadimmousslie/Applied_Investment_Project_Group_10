@@ -148,7 +148,8 @@ def main():
     me_dec = m[m["date"].dt.month == 12][["permno", "date", "me_permco"]].rename(columns={"me_permco": "me_dec"})
     me_dec["june"] = me_dec["date"] + pd.offsets.MonthEnd(6)
     p = p.merge(me_dec[["permno", "june", "me_dec"]], on=["permno", "june"], how="left")
-    p["log_bm"] = np.log(p["be"].where(p["be"] > 0) / p["me_dec"])
+    # BE Compustat en M$, ME CRSP (MthCap = |prix| x shrout) en milliers de $ : on remet ME en M$
+    p["log_bm"] = np.log(p["be"].where(p["be"] > 0) / (p["me_dec"] / 1000))
     p["log_me"] = np.log(p["me"])
 
     # ------------------------------------------------ volatilité et bêta
