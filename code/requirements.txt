@@ -1,7 +1,12 @@
-pandas>=2.0
-numpy
-pyarrow
-wrds
-requests
-scipy
-matplotlib
+# Versions avec lesquelles la chaîne complète a été exécutée et validée (Python 3.13.0, macOS, novembre 2026).
+# La chaîne a aussi été reproduite à l'identique (mêmes tableaux) avec Python 3.10.12, pandas 2.3.3 et numpy 2.2.6.
+pandas==2.2.3
+numpy==2.5.4
+scipy==1.18.1
+matplotlib==3.11.2
+pyarrow==26.0.0
+requests==2.34.2
+
+# Uniquement pour 01_extract_wrds.py (extraction directe depuis WRDS en Python) ;
+# inutile si les données sont importées depuis les CSV avec 01b_import_csv.py.
+wrds==3.5.0
