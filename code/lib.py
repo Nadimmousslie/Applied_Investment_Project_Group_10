@@ -94,7 +94,9 @@ def load_returns(names=None):
 
 # =============================================================================== construction
 def _cap_weights(w, cap, min_names):
-    """Plafond par titre avec redistribution itérative ; EW si trop peu de titres."""
+    """Plafond par titre avec redistribution itérative ; EW si trop peu de titres.
+    L'excédent des titres plafonnés est redistribué au prorata des titres encore sous le plafond,
+    jusqu'à ce qu'aucun poids ne dépasse cap (la jambe somme toujours à 1)."""
     n = len(w)
     if n == 0:
         return w, False
@@ -149,16 +151,19 @@ def build_portfolio(panel, selection="combo", vol_filter=False, weighting="vw", 
         p = p[p["date"] <= end]
 
     for t, df in p.groupby("date", sort=True):
+        # 1) univers de la date t (déjà éligible), éventuellement restreint aux large caps
         df = df[df[mom_col].notna()]
         if universe == "large":
             nyse_me = df.loc[df["nyse"], "me_permco"]
             if len(nyse_me) == 0:
                 continue
             df = df[df["me_permco"] >= nyse_me.median()]
+        # 2) filtre de risque : on retire le quintile le plus volatil de TOUT l'univers (pas de seuil NYSE)
         if vol_filter:
             df = df[df["vol"] <= df["vol"].quantile(vol_pct)]
         if len(df) < 20:
             continue
+        # 3) score en rangs centiles (0-1) ; 4) sélection par déciles calculés sur les seuls titres NYSE
         if selection == "mom":
             score = df[mom_col].rank(pct=True)
         else:
@@ -175,6 +180,7 @@ def build_portfolio(panel, selection="combo", vol_filter=False, weighting="vw", 
             long_m, short_m = score >= q(CFG["long_pct"]), score <= q(CFG["short_pct"])
         short_m &= ~long_m
 
+        # 5) pondération + plafond de 5 % dans chaque jambe ; rendement réalisé en t+1 (daté t+1)
         rec = {"date": t + MONTH}
         for side, mask, tag in ((1, long_m, "L"), (-1, short_m, "S")):
             leg = df[mask]

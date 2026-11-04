@@ -1,18 +1,18 @@
 \begin{table}[htbp]
 \centering
 \small
-\caption{Bonus : coûts par demi-spread bid-ask (méthode du cours, sans impact de prix)}
+\caption{Bonus : coûts par demi-spread bid-ask (méthode du cours, sans impact de prix ; spreads NYSE rarement cotés avant 1993, donc imputés)}
 \label{tab:T8b_couts_spread}
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrrrrrrrrrr}
 \toprule
-Portefeuille & Coût moyen (\%/mois) & Rend. ann. net (\%) & Sharpe net & α net (\%) & t(α) net \\
+Portefeuille & Spread observé (\% des échanges) & Coût moyen (\%/mois) & Rend. ann. net (\%) & Sharpe net & α net (\%) & t(α) net & Coût 1975–2000 (\%/mois) & Sharpe net 1975–2000 & Coût 2001–2025 (\%/mois) & Sharpe net 2001–2025 \\
 \midrule
-P1 Traditional MOM & 0.59 & 1.48 & 0.07 & -0.51 & -4.14 \\
-P2 Quality MOM & 0.44 & 2.59 & 0.15 & -0.48 & -4.03 \\
-P3 Filtered Q-MOM & 0.46 & 1.12 & 0.07 & -0.44 & -3.75 \\
-P4 Weighted Q-MOM & 0.61 & 0.14 & 0.01 & -0.64 & -6.61 \\
-P5 QVMM & 0.63 & -0.95 & -0.08 & -0.57 & -6.07 \\
-P5-B QVMM (10/20) & 0.38 & 1.41 & 0.13 & -0.33 & -4.37 \\
+P1 Traditional MOM & 65.99 & 0.59 & 1.48 & 0.07 & -0.51 & -4.14 & 1.05 & 0.08 & 0.12 & 0.05 \\
+P2 Quality MOM & 66.19 & 0.44 & 2.59 & 0.15 & -0.48 & -4.03 & 0.78 & 0.17 & 0.09 & 0.14 \\
+P3 Filtered Q-MOM & 66.49 & 0.46 & 1.12 & 0.07 & -0.44 & -3.75 & 0.80 & 0.08 & 0.09 & 0.06 \\
+P4 Weighted Q-MOM & 70.76 & 0.61 & 0.14 & 0.01 & -0.64 & -6.61 & 1.08 & -0.06 & 0.13 & 0.07 \\
+P5 QVMM & 71.34 & 0.63 & -0.95 & -0.08 & -0.57 & -6.07 & 1.11 & -0.21 & 0.13 & 0.06 \\
+P5-B QVMM (10/20) & 71.04 & 0.38 & 1.41 & 0.13 & -0.33 & -4.37 & 0.66 & 0.18 & 0.08 & 0.08 \\
 \bottomrule
 \end{tabular}
 \end{table}

@@ -47,6 +47,8 @@ def main():
             if len(s) < 24:
                 continue
             a = nw_reg(s, F)
+            if k == "UMD":      # UMD régressé sur FF5+MOM, qui contient UMD : alpha ≡ 0, t-stat = bruit numérique
+                a = {"alpha": np.nan, "t_alpha": np.nan, "ir": np.nan}
             rows.append({"Période": lab, "Portefeuille": LABELS.get(k, k), "Mois": len(s),
                          "Rend. ann. (%)": s.mean() * 1200, "Sharpe": s.mean() / s.std() * np.sqrt(12),
                          "α FF5+MOM (%)": a["alpha"] * 100, "t(α)": a["t_alpha"], "IR": a["ir"]})

@@ -49,8 +49,12 @@ def main():
     if "P5_IV" in alpha_g and "P1_VW" in alpha_g:
         dT = turn["P5_IV"] - turn["P1_VW"]
         da = alpha_g["P5_IV"] - alpha_g["P1_VW"]
-        be = da / dT * 1e4 if dT > 0 else (np.inf if da > 0 else np.nan)
+        # c* tel que alpha net(P5) = alpha net(P1) : da - c* dT = 0.
+        # dT > 0 : P5 bat P1 en net si c < c* ; dT < 0 (P5 tourne moins) : P5 bat P1 en net si c > c*.
+        be = da / dT * 1e4 if dT != 0 else np.nan
         t8.loc[LABELS["P5_IV"], "Break-even avantage P5 vs P1 (bps)"] = be
+        sens = "c < c*" if dT > 0 else "c > c*"
+        print(f"  P5 vs P1 : Δα = {da*1e4:.1f} bps/mois, Δturnover = {dT*100:.0f} %, c* = {be:.1f} bps (P5 meilleur en net si {sens})")
     t8.index.name = "Portefeuille"
     save_table(t8, "T8_couts", "Coûts de transaction : rendements, Sharpe et alphas FF5+MOM nets, coût de break-even")
 
@@ -88,6 +92,7 @@ def main():
                                  np.where(panel["me_permco"] < panel["p50"], "small", "large"))
     by_date = panel.groupby(["date", "size_cat"])["hs"].transform("mean")
     overall = panel.groupby("size_cat")["hs"].transform("mean")
+    panel["hs_obs"] = panel["hs"].notna()                 # spread réellement coté (avant imputation)
     panel["hs"] = panel["hs"].fillna(by_date).fillna(overall)
     t8b = {}
     for k in PORTS_COST:
@@ -96,20 +101,29 @@ def main():
             continue
         w = pd.read_parquet(f)
         tr = leg_trades(w, panel)
-        tr = tr.merge(panel[["date", "permno", "hs"]], on=["date", "permno"], how="left")
+        tr = tr.merge(panel[["date", "permno", "hs", "hs_obs"]], on=["date", "permno"], how="left")
         tr["hs"] = tr["hs"].fillna(panel["hs"].mean())     # titres sortis du panel éligible
         cost = (tr["dw"] * tr["hs"]).groupby(tr["date"]).sum()
         cost.index = cost.index + MONTH
         r = in_sample(rets[k])
         net = r["LS"] - cost.reindex(r.index).fillna(0)
         an = nw_reg(net, F)
-        t8b[LABELS.get(k, k)] = {"Coût moyen (%/mois)": cost.reindex(r.index).mean() * 100,
-                                 "Rend. ann. net (%)": net.mean() * 1200,
-                                 "Sharpe net": net.mean() / net.std() * np.sqrt(12),
-                                 "α net (%)": an["alpha"] * 100, "t(α) net": an["t_alpha"]}
+        obs = (tr["dw"] * tr["hs_obs"].eq(True)).sum() / tr["dw"].sum()        # part des |Δw| à spread coté
+        row = {"Spread observé (% des échanges)": obs * 100,
+               "Coût moyen (%/mois)": cost.reindex(r.index).mean() * 100,
+               "Rend. ann. net (%)": net.mean() * 1200,
+               "Sharpe net": net.mean() / net.std() * np.sqrt(12),
+               "α net (%)": an["alpha"] * 100, "t(α) net": an["t_alpha"]}
+        # avant / après la décimalisation (2001) : les spreads en 1/8 $ dominent le coût de l'échantillon complet
+        for lab, (a_, b_) in (("1975–2000", ("1975-01", "2000-12")), ("2001–2025", ("2001-01", "2025-12"))):
+            n_ = net.loc[a_:b_]
+            row[f"Coût {lab} (%/mois)"] = cost.reindex(n_.index).mean() * 100
+            row[f"Sharpe net {lab}"] = n_.mean() / n_.std() * np.sqrt(12)
+        t8b[LABELS.get(k, k)] = row
     t8b = pd.DataFrame(t8b).T
     t8b.index.name = "Portefeuille"
-    save_table(t8b, "T8b_couts_spread", "Bonus : coûts par demi-spread bid-ask (méthode du cours, sans impact de prix)")
+    save_table(t8b, "T8b_couts_spread", "Bonus : coûts par demi-spread bid-ask (méthode du cours, sans impact de prix ; "
+                                        "spreads NYSE rarement cotés avant 1993, donc imputés)")
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ Colonnes principales :
                 (avec H = t+1 le mois de détention : H-12..H-2 et H-6..H-2, comme UMD)
     op          Operating Profitability winsorisée 1 %/99 % chaque mois (univers éligible)
     vol         volatilité annualisée : 126 jours de bourse jusqu'à t (repli : 36 mois)
-    beta        bêta Dimson sur 126 jours (beta_0 + beta_-1), pour l'analyse des crashs
+    beta        bêta de Dimson sur 126 jours (b0 + b1, régression multiple), pour l'analyse des crashs
     me, log_me, log_bm, ret (rendement du mois t, reversal)
     nyse, eligible
 """
@@ -80,18 +80,26 @@ def daily_vol_beta():
         m = mkt.reindex(r.index)
         m_lag = mkt.shift(1).reindex(r.index)
 
-        def beta_vs(mser):
-            mask = r.notna() & mser.notna().to_numpy()[:, None]
-            rm = r.where(mask)
-            mm = pd.DataFrame(np.broadcast_to(mser.to_numpy()[:, None], r.shape), index=r.index,
-                              columns=r.columns).where(mask)
-            roll = lambda x: x.rolling(W, min_periods=MINP).mean()
-            cov = roll(rm * mm) - roll(rm) * roll(mm)
-            var = roll(mm * mm) - roll(mm) ** 2
-            return cov / var
+        # Bêta de Dimson (1979) : r_i,d = a + b0 m_d + b1 m_{d-1} + e, bêta = b0 + b1, estimé par
+        # régression MULTIPLE sur les 126 derniers jours (>= 100 obs.), à partir de moments glissants.
+        ok = r.notna() & m.notna().to_numpy()[:, None] & m_lag.notna().to_numpy()[:, None]
+        rr = r.where(ok)
 
-        vol = r.rolling(W, min_periods=MINP).std() * np.sqrt(252)
-        beta = beta_vs(m) + beta_vs(m_lag)      # Dimson : beta_0 + beta_-1 (approx. par bêtas simples)
+        def bcast(s):
+            return pd.DataFrame(np.broadcast_to(s.to_numpy()[:, None], r.shape), index=r.index,
+                                columns=r.columns).where(ok)
+
+        m0, m1 = bcast(m), bcast(m_lag)
+        roll = lambda x: x.rolling(W, min_periods=MINP).mean()
+        e_r, e0, e1 = roll(rr), roll(m0), roll(m1)
+        c0, c1 = roll(rr * m0) - e_r * e0, roll(rr * m1) - e_r * e1          # cov(r, m_d), cov(r, m_d-1)
+        v0, v1 = roll(m0 * m0) - e0 ** 2, roll(m1 * m1) - e1 ** 2            # var(m_d), var(m_d-1)
+        c01 = roll(m0 * m1) - e0 * e1                                       # cov(m_d, m_d-1)
+        det = v0 * v1 - c01 ** 2
+        beta = (c0 * v1 - c1 * c01 + c1 * v0 - c0 * c01) / det              # b0 + b1 (formule 2x2 inversée)
+        del rr, m0, m1, e_r, e0, e1, c0, c1, v0, v1, c01, det
+
+        vol = r.rolling(W, min_periods=MINP).std() * np.sqrt(252)        # vol annualisée sur 126 jours
 
         # dernier jour de bourse de chaque mois de l'année du fichier
         year = int(fpath.stem)
