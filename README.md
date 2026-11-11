@@ -46,7 +46,7 @@ Déterminer si une stratégie long/short sur actions américaines est « worthwh
 - construction d'un panel mensuel titre × date sans look-ahead ;
 - une seule fonction (`lib.build_portfolio`) construit n'importe quel portefeuille, ce qui rend les variantes de robustesse « gratuites » ;
 - tous les paramètres sont centralisés dans `code/00_config.py` ;
-- production automatique de 19 tableaux (CSV + LaTeX) et 6 figures (PNG + PDF) prêts pour l'article.
+- production automatique de 20 tableaux (CSV + LaTeX) et 6 figures (PNG + PDF) prêts pour l'article.
 
 ---
 
@@ -75,8 +75,9 @@ Applied_Investment_Project_Group_10/
 │   ├── 09_periods_crashes.py     # sous-périodes, crashs, bêtas des jambes
 │   ├── 10_robustness.py          # variantes (large caps, momentum 6-1, options)
 │   ├── 11_figures.py             # figures F1 à F4
+│   ├── 12_vol_matched.py         # P5 contre le momentum classique ramené à la même volatilité
 │   ├── lib.py                    # fonctions communes aux scripts 05 à 11
-│   └── main.py                   # lance la chaîne 02 -> 11 (vérifie d'abord les entrées)
+│   └── main.py                   # lance la chaîne 02 -> 12 (vérifie d'abord les entrées)
 ├── data/                         # NON versionné (licence WRDS, volume)
 │   ├── raw/
 │   │   ├── csv/                  # entrée de 01b : CSV/ZIP téléchargés sur WRDS
@@ -112,6 +113,7 @@ portfolios + panel + French ──08──> T8, T8b, F6
 portfolios + panel + French ──09──> T9, T10, F5
 panel + P1/P5 + French ──10──> T11
 portfolios + panel + French ──11──> F1, F2, F3, F4
+portfolios (P1, P5) ─────────12──> T12
 ```
 
 ---
@@ -194,7 +196,7 @@ python code/01b_import_csv.py
 # 3. télécharger les facteurs de Kenneth French (une seule fois, internet requis)
 python code/01_extract_wrds.py --only french
 
-# 4. toute l'analyse : étapes 02 à 11, tableaux et figures
+# 4. toute l'analyse : étapes 02 à 12, tableaux et figures
 python code/main.py
 ```
 
@@ -202,7 +204,7 @@ Options de `main.py` :
 
 | Commande | Effet |
 |---|---|
-| `python code/main.py` | étapes 02 → 11 |
+| `python code/main.py` | étapes 02 → 12 |
 | `python code/main.py --from 5` | reprend à partir de l'étape 05 |
 | `python code/main.py --to 4` | s'arrête après l'étape 04 |
 | `python code/main.py --only 7` | une seule étape |
@@ -212,7 +214,7 @@ Options de `main.py` :
 
 Avant de lancer quoi que ce soit, `main.py` vérifie la présence des fichiers d'entrée et indique la commande à exécuter s'il en manque un. La chaîne s'arrête au premier script en erreur et indique la commande pour reprendre.
 
-**Durées observées** (MacBook, novembre 2026) : chaîne 02 → 11 complète en 3 à 7 minutes, dont environ 2,5 à 4,5 minutes pour l'étape 04 (volatilité journalière) ; l'import 01b prend quelques minutes.
+**Durées observées** (MacBook, novembre 2026) : chaîne 02 → 12 complète en 3 à 7 minutes, dont environ 2,5 à 4,5 minutes pour l'étape 04 (volatilité journalière) ; l'import 01b prend quelques minutes.
 
 **Contrôle bloquant** : P1-VW doit avoir une corrélation d'au moins 0,8 avec le facteur UMD de French. Sinon, l'étape 05 s'arrête et la suite n'est pas exécutée.
 
@@ -225,7 +227,7 @@ Avant de lancer quoi que ce soit, `main.py` vérifie la présence des fichiers d
 ### Fichiers produits
 | Dossier | Contenu |
 |---|---|
-| `output/tables/` | 19 tableaux, chacun en `.csv` (Excel) et `.tex` (LaTeX) |
+| `output/tables/` | 20 tableaux, chacun en `.csv` (Excel) et `.tex` (LaTeX) |
 | `output/figures/` | 6 figures, chacune en `.png` et `.pdf` |
 | `output/portfolios/` | `<NOM>_returns.parquet` (rendements L, S, L/S, nombre de titres, turnover) et `<NOM>_weights.parquet` (poids par titre) pour les 9 portefeuilles |
 
@@ -237,7 +239,7 @@ Avant de lancer quoi que ce soit, `main.py` vérifie la présence des fichiers d
 | 5.2 Horse race | T5 performance, F2 richesse cumulée, F3 drawdowns, F4 volatilité glissante |
 | 5.3 Alphas et spanning | T6 alphas (CAPM, FF3, FF5, FF5+MOM, q), T6b expositions, T6c GRS, T7 spanning et différences de Sharpe |
 | 5.4 Coûts | T8 coûts et break-even, T8b demi-spread (avant / après 2001), F6 Sharpe net selon le coût |
-| 6. Robustesse | T9 sous-périodes, T10 et F5 crashs, T11 robustesse |
+| 6. Robustesse | T9 sous-périodes, T10 et F5 crashs, T11 robustesse, T12 comparaison à volatilité égale |
 
 ### Principaux résultats (version du 4 novembre 2026, janvier 1975 – décembre 2025, 612 mois)
 | | P1 momentum VW | P5 QVMM | UMD (French) |

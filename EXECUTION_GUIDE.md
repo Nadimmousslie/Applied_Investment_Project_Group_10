@@ -89,9 +89,10 @@ L'ordre ci-dessous découle des dépendances réelles du code (chaque script lit
 | 9 | `09_periods_crashes.py` | sous-périodes et crashs | portefeuilles, `panel`, French | T9, T10, F5 | 5 |
 | 10 | `10_robustness.py` | robustesse | `panel`, P1/P5, French | T11 | 5 |
 | 11 | `11_figures.py` | figures de l'article | portefeuilles, `panel`, French | F1, F2, F3, F4 | 5 |
-| — | `main.py` | orchestration 02 → 11 | tous les précédents | tous les précédents | — |
+| 12 | `12_vol_matched.py` | P5 contre P1 à volatilité égale | portefeuilles P1 et P5 | T12 | 5 |
+| — | `main.py` | orchestration 02 → 12 | tous les précédents | tous les précédents | — |
 
-Les étapes 6 à 11 ne dépendent pas les unes des autres : après l'étape 5, elles peuvent être lancées dans n'importe quel ordre.
+Les étapes 6 à 12 ne dépendent pas les unes des autres : après l'étape 5, elles peuvent être lancées dans n'importe quel ordre.
 
 ---
 
@@ -283,6 +284,17 @@ Les étapes 6 à 11 ne dépendent pas les unes des autres : après l'étape 5, e
 8. **Vérifications** : F3 cohérente avec T5 (drawdown maximal de P1 ≈ −65 %, de P5 ≈ −40 %) ; F1 : univers entre 1 200 et 1 950 titres avec un pic vers 2000.
 9. **Erreurs potentielles** : aucune connue (matplotlib fonctionne sans écran, mode `Agg`).
 
+### Module 12 — `12_vol_matched.py` (comparaison à volatilité égale)
+1. **Objectif** : vérifier si la gestion de la volatilité au niveau des titres (P5) fait mieux que la solution la plus simple, détenir moins de momentum classique.
+2. **Fonctionnement** : multiplie les rendements de P1_VW par k = vol(P5) / vol(P1), calculé sur l'échantillon complet (le reste du capital est en cash) ; calcule rendement, volatilité, Sharpe, drawdown maximal et rendement cumulé pendant les trois épisodes de crash pour P1, P1 à la volatilité de P5, P1-EW et P5. Le changement d'échelle ne modifie pas le Sharpe.
+3. **Inputs** : `output/portfolios/P1_VW_returns.parquet`, `P1_EW_returns.parquet`, `P5_IV_returns.parquet`.
+4. **Outputs** : `T12_volatilite_egale` (.csv et .tex).
+5. **Dépendances** : 05.
+6. **Commande** : `python code/main.py --only 12`.
+7. **Résultats attendus** : un tableau de 4 lignes ; facteur d'échelle 0,547.
+8. **Vérifications** : P1 à la volatilité de P5 : drawdown maximal −41,1 % (P5 : −40,5 %) ; crash 2009 : −31,3 % (P5 : −24,0 %) ; les lignes P1 et P5 reproduisent T5 et T10.
+9. **Erreurs potentielles** : aucune connue.
+
 ### Module lib — `lib.py` (fonctions communes)
 1. **Objectif** : éviter de dupliquer le code entre les scripts 05 à 11.
 2. **Fonctionnement**
@@ -299,12 +311,12 @@ Les étapes 6 à 11 ne dépendent pas les unes des autres : après l'étape 5, e
 9. **Erreurs potentielles** : `ModuleNotFoundError: scipy` dans 07 : installer les dépendances (`pip install -r code/requirements.txt`).
 
 ### Module main — `main.py` (orchestration)
-1. **Objectif** : enchaîner les étapes 02 à 11 en une commande.
+1. **Objectif** : enchaîner les étapes 02 à 12 en une commande.
 2. **Fonctionnement** : vérifie d'abord la présence des fichiers d'entrée nécessaires aux étapes demandées et indique la commande à lancer s'il en manque (message `Fichiers d'entrée manquants`) ; signale si le journalier ou les q-factors manquent ; lance chaque script dans un processus séparé ; s'arrête au premier script en erreur avec la commande de reprise.
 3. **Inputs** : ceux des étapes lancées.
 4. **Outputs** : ceux des étapes lancées.
 5. **Dépendances** : 01b (ou 01) et `01_extract_wrds.py --only french` exécutés au préalable.
-6. **Commandes** : `python code/main.py`, et les options `--from N`, `--to N`, `--only N`, `--optional`, `--force`, `--with-extract`.
+6. **Commandes** : `python code/main.py` (étapes 02 à 12), et les options `--from N`, `--to N`, `--only N`, `--optional`, `--force`, `--with-extract`.
 7. **Résultats attendus** : `[NN] terminé en … s` pour chaque étape puis `Tout est à jour en … s : output/tables/ et output/figures/`.
 8. **Vérifications** : comparer aux valeurs de la partie D.
 9. **Erreurs potentielles** : `Fichiers d'entrée manquants` (suivre la commande indiquée) ; `*** Arrêt : NN_….py a échoué` (lire le message au-dessus, corriger puis `--from NN`).

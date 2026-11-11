@@ -1,7 +1,7 @@
 """
 main.py — QVMM : lance toute la chaîne et régénère tous les tableaux et figures du rapport.
 
-    python code/main.py                  # 02 -> 11 (l'extraction WRDS 01 est lancée à part, une fois)
+    python code/main.py                  # 02 -> 12 (l'extraction WRDS 01 est lancée à part, une fois)
     python code/main.py --from 5         # reprendre à partir de 05_portfolios.py
     python code/main.py --only 7         # un seul script
     python code/main.py --with-extract   # inclure 01_extract_wrds.py (accès WRDS requis)
@@ -30,6 +30,7 @@ STEPS = {
     9: "09_periods_crashes.py",
     10: "10_robustness.py",
     11: "11_figures.py",
+    12: "12_vol_matched.py",
 }
 
 
@@ -45,7 +46,7 @@ NEEDS = {
         "data/raw/french_mom.parquet": FRENCH},
 }
 NEEDS[6] = {"data/clean/panel.parquet": "étape 4"}                 # tests du cours : le panel suffit
-for _s in range(7, 12):
+for _s in range(7, 13):
     NEEDS[_s] = {"data/clean/panel.parquet": "étape 4", "data/raw/french_ff5.parquet": FRENCH,
                  "data/raw/french_mom.parquet": FRENCH, "output/portfolios/P1_VW_returns.parquet": "étape 5"}
 MAKES = {2: ["data/clean/crsp_m.parquet"], 3: ["data/clean/op.parquet"], 4: ["data/clean/panel.parquet"],
@@ -73,7 +74,7 @@ def preflight(steps):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--from", dest="start", type=int, default=2)
-    ap.add_argument("--to", dest="end", type=int, default=11)
+    ap.add_argument("--to", dest="end", type=int, default=12)
     ap.add_argument("--only", type=int)
     ap.add_argument("--with-extract", action="store_true")
     ap.add_argument("--optional", action="store_true")
