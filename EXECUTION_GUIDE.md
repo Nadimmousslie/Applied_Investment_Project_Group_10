@@ -296,7 +296,7 @@ Les étapes 6 à 12 ne dépendent pas les unes des autres : après l'étape 5, e
 9. **Erreurs potentielles** : aucune connue.
 
 ### Module lib — `lib.py` (fonctions communes)
-1. **Objectif** : éviter de dupliquer le code entre les scripts 05 à 11.
+1. **Objectif** : éviter de dupliquer le code entre les scripts 05 à 12.
 2. **Fonctionnement**
    - chargement : `load_panel`, `load_factors` (French en décimal, q-factors convertis de % en décimal, alignés en fin de mois), `load_returns`, `in_sample` ;
    - construction : `build_portfolio` (univers, filtre de vol, score, sélection NYSE, pondération, plafond `_cap_weights`, rendement *t+1*, turnover du cours, règle 10 %/20 %), `leg_trades` (|Δw| par titre) ;

@@ -4,8 +4,8 @@ Projet du cours *Applied Investment* (HEC Lausanne) : construction et évaluatio
 
 - **Rendu de l'article** : vendredi 13 novembre 2026, 23h59 (20 pages maximum hors tableaux, graphiques et références)
 - **Présentation orale** : 15 minutes, en classe (date communiquée plus tard)
-- **Groupe 10** : Nadim MOUSSLIE, Léonard PERIGAULT, Matteo GIRAUD, Laura PINTO, Livio
-- **Documents de référence** : `QVMM_Roadmap_finale.pdf` (stratégie ; en cas de doute, la roadmap fait foi) et `QVMM_Guide_donnees_CDIF.pdf` (téléchargement des données WRDS au CDIF)
+- **Groupe 10** : Nadim MOUSSLIE, Léonard PERIGAULT, Matteo GIRAUD, Laura PINTO, Livio MANZINALI
+- **Documents** : le rapport final fait foi pour la méthode et les résultats. `QVMM_Roadmap_finale.pdf` est le document de planification du projet (version du 28 octobre 2026) et `QVMM_Guide_donnees_CDIF.pdf` le guide de téléchargement des données WRDS au CDIF
 - **Manuel d'exécution détaillé, module par module** : [`EXECUTION_GUIDE.md`](EXECUTION_GUIDE.md)
 
 ---
@@ -56,7 +56,7 @@ Déterminer si une stratégie long/short sur actions américaines est « worthwh
 Applied_Investment_Project_Group_10/
 ├── README.md                     # ce fichier
 ├── EXECUTION_GUIDE.md            # manuel d'exécution module par module
-├── QVMM_Roadmap_finale.pdf       # stratégie (document de référence)
+├── QVMM_Roadmap_finale.pdf       # document de planification (28 octobre 2026)
 ├── QVMM_Guide_donnees_CDIF.pdf   # guide de téléchargement des données WRDS
 ├── .gitignore                    # exclut data/, *.parquet, *.csv (sauf output/tables/), .venv/
 ├── test.py                       # fichier vide de test, non utilisé par le code
@@ -76,7 +76,7 @@ Applied_Investment_Project_Group_10/
 │   ├── 10_robustness.py          # variantes (large caps, momentum 6-1, options)
 │   ├── 11_figures.py             # figures F1 à F4
 │   ├── 12_vol_matched.py         # P5 contre P1 à volatilité égale et contre Barroso-Santa-Clara
-│   ├── lib.py                    # fonctions communes aux scripts 05 à 11
+│   ├── lib.py                    # fonctions communes aux scripts 05 à 12
 │   └── main.py                   # lance la chaîne 02 -> 12 (vérifie d'abord les entrées)
 ├── data/                         # NON versionné (licence WRDS, volume)
 │   ├── raw/
@@ -88,14 +88,14 @@ Applied_Investment_Project_Group_10/
 │   └── clean/                    # crsp_m.parquet, op.parquet, panel.parquet
 └── output/
     ├── portfolios/               # rendements et poids de chaque portefeuille (non versionné)
-    ├── tables/                   # T0 à T11 en .csv et .tex (versionnés)
+    ├── tables/                   # T0 à T12 en .csv et .tex (versionnés)
     └── figures/                  # F1 à F6 en .png et .pdf (versionnés)
 ```
 
 ### Comment les modules communiquent
 Les scripts ne s'appellent pas entre eux : **chaque étape lit les fichiers écrits par la précédente** (format parquet), ce qui permet de relancer une étape sans tout recalculer. Ils partagent deux modules :
 - `00_config.py` : chemins et paramètres, importé par `importlib.import_module("00_config")` (son nom commence par un chiffre). Les dossiers `data/` et `output/` sont créés automatiquement à partir de l'emplacement du fichier, **les scripts peuvent donc être lancés depuis n'importe quel dossier** ;
-- `lib.py` : chargement des données, `build_portfolio`, statistiques (Newey-West, GRS, Fama-MacBeth, Jobson-Korkie-Memmel), écriture des tableaux et figures. Utilisé par les scripts 05 à 11.
+- `lib.py` : chargement des données, `build_portfolio`, statistiques (Newey-West, GRS, Fama-MacBeth, Jobson-Korkie-Memmel), écriture des tableaux et figures. Utilisé par les scripts 05 à 12.
 
 ### Flux des données
 ```
@@ -231,15 +231,17 @@ Avant de lancer quoi que ce soit, `main.py` vérifie la présence des fichiers d
 | `output/figures/` | 6 figures, chacune en `.png` et `.pdf` |
 | `output/portfolios/` | `<NOM>_returns.parquet` (rendements L, S, L/S, nombre de titres, turnover) et `<NOM>_weights.parquet` (poids par titre) pour les 9 portefeuilles |
 
-| Section de l'article | Tableaux et figures |
+| Section du rapport | Tableaux et figures du code |
 |---|---|
-| Contrôle (annexe) | T0 : P1 contre UMD |
-| 3. Données | T1 description par décennie, T1b corrélations des signaux, F1 nombre de titres |
-| 5.1 Tests du cours (H1) | T2a/T2b déciles MOM et OP, T3 double tri 3×3 (EW, VW), T4 Fama-MacBeth (tous, large caps) |
-| 5.2 Horse race | T5 performance, F2 richesse cumulée, F3 drawdowns, F4 volatilité glissante |
-| 5.3 Alphas et spanning | T6 alphas (CAPM, FF3, FF5, FF5+MOM, q), T6b expositions, T6c GRS, T7 spanning et différences de Sharpe |
-| 5.4 Coûts | T8 coûts et break-even, T8b demi-spread (avant / après 2001), F6 Sharpe net selon le coût |
-| 6. Robustesse | T9 sous-périodes, T10 et F5 crashs, T11 robustesse, T12 comparaison à volatilité égale et benchmark Barroso-Santa-Clara |
+| Contrôle de la chaîne | T0 : P1 contre UMD (corrélation 0,92) |
+| 3.1 Données et annexe A.1 | T1 description par décennie, T1b corrélations des signaux, F1 nombre de titres |
+| 4.1 Signaux (tableau 2, annexes A.1 et A.2) | T2a/T2b déciles MOM et OP, T3 double tri 3×3 (EW, VW), T4 Fama-MacBeth (tous, large caps) |
+| 4.2 Rendements et risque (tableaux 3 et 4, figures 1 et 2) | T5 performance, T12 comparaison à volatilité égale et benchmark Barroso-Santa-Clara, F2 richesse cumulée, F3 drawdowns, F4 volatilité glissante |
+| 4.3 Filtre contre pondération (tableau 5) | T5 performance, T7 différences de portefeuilles et tests de Sharpe |
+| 4.4 Alphas (tableau 6, annexe A.3) | T6 alphas (CAPM, FF3, FF5, FF5+MOM, q), T6b expositions, T6c GRS, T7 spanning |
+| 5.1 Coûts (tableau 7, figure 3, annexe A.3) | T8 coûts et break-even, T8b demi-spread (avant / après 2001), F6 Sharpe net selon le coût |
+| 5.2 Crashs (figure 4, annexe A.4) | T10 crashs, F5 décomposition long/short |
+| 5.3 Robustesse (annexe A.5) | T9 sous-périodes, T11 robustesse |
 
 ### Principaux résultats (version du 4 novembre 2026, janvier 1975 – décembre 2025, 612 mois)
 | | P1 momentum VW | P5 QVMM | UMD (French) |
@@ -251,38 +253,37 @@ Avant de lancer quoi que ce soit, `main.py` vérifie la présence des fichiers d
 | Alpha FF5+MOM (t) | 0,07 %/mois (0,6) | 0,04 %/mois (0,5) | — |
 | Crash 2009 (L/S cumulé) | −53 % | −24 % | — |
 
-Lecture : la gestion de la volatilité réduit fortement le risque et les crashs, mais aucun portefeuille n'a d'alpha significatif face à FF5 + Momentum (test GRS : p = 0,31). Filtrer la volatilité bat la pondération inverse-vol (P3-EW contre P4 : alpha 0,13 %/mois, t = 2,8). Les coûts réels (demi-spread) sont élevés avant la décimalisation de 2001 (environ 1 %/mois pour P5) et faibles ensuite (environ 0,13 %/mois).
+Lecture :
+- **Risque** : QVMM divise presque par deux la volatilité du momentum classique. À volatilité égale (P1 ramené à la volatilité de P5, T12), son drawdown maximal est en revanche le même (−40 % contre −41 %) ; il garde un meilleur Sharpe (0,54 contre 0,38, différence non significative, p = 0,12) et des pertes plus faibles dans les crashs (2009 : −24 % contre −31 %).
+- **Alpha** : aucun portefeuille n'a d'alpha significatif face à FF5 + Momentum (test GRS : p = 0,31) ; QVMM s'explique par les facteurs momentum et rentabilité.
+- **Filtre contre pondération** : les contrôles EW montrent que la pondération 1/σ ne fait pas mieux que des parts égales, et que le filtre de volatilité réduit surtout le risque plutôt que d'augmenter le Sharpe.
+- **Benchmark** : le momentum géré par la volatilité au niveau du portefeuille (Barroso et Santa-Clara, 2015), hors de notre mandat 100/100, fait mieux que QVMM (Sharpe 0,73).
+- **Coûts** : les coûts réels (demi-spread) sont élevés avant la décimalisation de 2001 (environ 1,1 %/mois pour P5) et faibles ensuite (environ 0,13 %/mois). Sur 1975–2025, le rendement net de P5 est négatif ; P5-B, qui échange 40 % de moins, reste légèrement positif.
 
 ### Vérifier que le programme fonctionne
 Avec les données WRDS du projet, une exécution correcte affiche notamment : `format détecté : CIZ`, `3,305,725 lignes, 25,650 titres` (01b), `Volatilité : 126 jours de rendements journaliers` et `Titres éligibles par mois : min 1182, médiane 1337, max 1948` (04), `Contrôle P1 OK : corrélation avec UMD = 0.92` (05), puis `Tout est à jour`. La liste complète des valeurs de contrôle se trouve dans `EXECUTION_GUIDE.md`.
 
 ---
 
-## 7. Échéances restantes
-
-| Dates | Étape |
-|---|---|
-| jusqu'au 12 nov. | Rédaction des résultats, robustesse, conclusion, relecture (chiffres du texte = tableaux), comptage des pages |
-| **13 nov., 23h59** | **Remise de l'article** |
-| après le 13 nov. | Diapositives (9) et répétition chronométrée |
-
-## 8. Bonnes pratiques de collaboration
+## 7. Bonnes pratiques de collaboration
 - récupérer le travail des autres avant de commencer : `git pull` (avec `git stash` / `git stash pop` si l'on a des modifications locales) ;
 - après une modification du code, relancer la chaîne à partir de l'étape modifiée (`python code/main.py --from N`) avant de pousser, pour que `output/` corresponde au code ;
 - commits courts et explicites ; ne pas travailler à plusieurs sur le même fichier en parallèle ;
 - versions des paquets fixées dans `code/requirements.txt` ;
 - toute modification d'un paramètre de `00_config.py` est discutée en groupe et justifiée dans le commit.
 
-## 9. Références principales
+## 8. Références principales
 - Jegadeesh, N., et Titman, S. (1993). *Returns to Buying Winners and Selling Losers*. Journal of Finance.
+- Carhart, M. M. (1997). *On Persistence in Mutual Fund Performance*. Journal of Finance.
 - Novy-Marx, R. (2013). *The Other Side of Value: The Gross Profitability Premium*. Journal of Financial Economics.
 - Fama, E. F., et French, K. R. (2015). *A Five-Factor Asset Pricing Model*. Journal of Financial Economics.
+- Hou, K., Xue, C., et Zhang, L. (2015). *Digesting Anomalies: An Investment Approach*. Review of Financial Studies.
 - Barroso, P., et Santa-Clara, P. (2015). *Momentum Has Its Moments*. Journal of Financial Economics.
-- Daniel, K., et Moskowitz, T. (2016). *Momentum Crashes*. Journal of Financial Economics.
-- Stambaugh, R., et Yuan, Y. (2017). *Mispricing Factors*. Review of Financial Studies.
+- Daniel, K., et Moskowitz, T. J. (2016). *Momentum Crashes*. Journal of Financial Economics.
+- Moreira, A., et Muir, T. (2017). *Volatility-Managed Portfolios*. Journal of Finance.
 - Supports du cours : Strategies, Factor models, Trading costs, Aggregate predictability.
 
-La bibliographie complète est dans la roadmap (section 16).
+La bibliographie complète est dans le rapport final.
 
-## 10. Licence et avertissement
+## 9. Licence et avertissement
 Projet académique réalisé dans le cadre d'un cours. Les données WRDS sont soumises à licence et ne sont pas distribuées. Les résultats ne constituent pas un conseil en investissement.
