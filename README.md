@@ -75,7 +75,7 @@ Applied_Investment_Project_Group_10/
 │   ├── 09_periods_crashes.py     # sous-périodes, crashs, bêtas des jambes
 │   ├── 10_robustness.py          # variantes (large caps, momentum 6-1, options)
 │   ├── 11_figures.py             # figures F1 à F4
-│   ├── 12_vol_matched.py         # P5 contre le momentum classique ramené à la même volatilité
+│   ├── 12_vol_matched.py         # P5 contre P1 à volatilité égale et contre Barroso-Santa-Clara
 │   ├── lib.py                    # fonctions communes aux scripts 05 à 11
 │   └── main.py                   # lance la chaîne 02 -> 12 (vérifie d'abord les entrées)
 ├── data/                         # NON versionné (licence WRDS, volume)
@@ -239,7 +239,7 @@ Avant de lancer quoi que ce soit, `main.py` vérifie la présence des fichiers d
 | 5.2 Horse race | T5 performance, F2 richesse cumulée, F3 drawdowns, F4 volatilité glissante |
 | 5.3 Alphas et spanning | T6 alphas (CAPM, FF3, FF5, FF5+MOM, q), T6b expositions, T6c GRS, T7 spanning et différences de Sharpe |
 | 5.4 Coûts | T8 coûts et break-even, T8b demi-spread (avant / après 2001), F6 Sharpe net selon le coût |
-| 6. Robustesse | T9 sous-périodes, T10 et F5 crashs, T11 robustesse, T12 comparaison à volatilité égale |
+| 6. Robustesse | T9 sous-périodes, T10 et F5 crashs, T11 robustesse, T12 comparaison à volatilité égale et benchmark Barroso-Santa-Clara |
 
 ### Principaux résultats (version du 4 novembre 2026, janvier 1975 – décembre 2025, 612 mois)
 | | P1 momentum VW | P5 QVMM | UMD (French) |

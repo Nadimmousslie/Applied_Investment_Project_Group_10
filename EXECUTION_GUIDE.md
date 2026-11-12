@@ -89,7 +89,7 @@ L'ordre ci-dessous découle des dépendances réelles du code (chaque script lit
 | 9 | `09_periods_crashes.py` | sous-périodes et crashs | portefeuilles, `panel`, French | T9, T10, F5 | 5 |
 | 10 | `10_robustness.py` | robustesse | `panel`, P1/P5, French | T11 | 5 |
 | 11 | `11_figures.py` | figures de l'article | portefeuilles, `panel`, French | F1, F2, F3, F4 | 5 |
-| 12 | `12_vol_matched.py` | P5 contre P1 à volatilité égale | portefeuilles P1 et P5 | T12 | 5 |
+| 12 | `12_vol_matched.py` | P5 contre P1 à volatilité égale et contre le momentum géré par la volatilité (Barroso et Santa-Clara) | portefeuilles P1 et P5, `crsp_daily/` | T12 | 5 |
 | — | `main.py` | orchestration 02 → 12 | tous les précédents | tous les précédents | — |
 
 Les étapes 6 à 12 ne dépendent pas les unes des autres : après l'étape 5, elles peuvent être lancées dans n'importe quel ordre.
@@ -286,13 +286,13 @@ Les étapes 6 à 12 ne dépendent pas les unes des autres : après l'étape 5, e
 
 ### Module 12 — `12_vol_matched.py` (comparaison à volatilité égale)
 1. **Objectif** : vérifier si la gestion de la volatilité au niveau des titres (P5) fait mieux que la solution la plus simple, détenir moins de momentum classique.
-2. **Fonctionnement** : multiplie les rendements de P1_VW par k = vol(P5) / vol(P1), calculé sur l'échantillon complet (le reste du capital est en cash) ; calcule rendement, volatilité, Sharpe, drawdown maximal et rendement cumulé pendant les trois épisodes de crash pour P1, P1 à la volatilité de P5, P1-EW et P5. Le changement d'échelle ne modifie pas le Sharpe.
-3. **Inputs** : `output/portfolios/P1_VW_returns.parquet`, `P1_EW_returns.parquet`, `P5_IV_returns.parquet`.
+2. **Fonctionnement** : multiplie les rendements de P1_VW par k = vol(P5) / vol(P1), calculé sur l'échantillon complet (le reste du capital est en cash) ; calcule rendement, volatilité, Sharpe, drawdown maximal et rendement cumulé pendant les trois épisodes de crash pour P1, P1 à la volatilité de P5, P1-EW et P5. Le changement d'échelle ne modifie pas le Sharpe. Ajoute le benchmark de la littérature : P1 géré par la volatilité au niveau du portefeuille (Barroso et Santa-Clara, 2015), où l'exposition du mois t+1 vaut 12 % divisé par la volatilité réalisée de P1 sur ses 126 derniers rendements journaliers (reconstruits à partir des poids mensuels et du CRSP journalier).
+3. **Inputs** : `output/portfolios/P1_VW_returns.parquet`, `P1_EW_returns.parquet`, `P5_IV_returns.parquet`, `P1_VW_weights.parquet`, `data/raw/crsp_daily/*.parquet`.
 4. **Outputs** : `T12_volatilite_egale` (.csv et .tex).
 5. **Dépendances** : 05.
 6. **Commande** : `python code/main.py --only 12`.
-7. **Résultats attendus** : un tableau de 4 lignes ; facteur d'échelle 0,547.
-8. **Vérifications** : P1 à la volatilité de P5 : drawdown maximal −41,1 % (P5 : −40,5 %) ; crash 2009 : −31,3 % (P5 : −24,0 %) ; les lignes P1 et P5 reproduisent T5 et T10.
+7. **Résultats attendus** : un tableau de 5 lignes ; facteur d'échelle 0,547 ; `contrôle journalier/mensuel de P1 : corrélation 0.9924` ; exposition Barroso-Santa-Clara entre 0,21 et 2,10 (605 mois).
+8. **Vérifications** : P1 à la volatilité de P5 : drawdown maximal −41,1 % (P5 : −40,5 %) ; crash 2009 : −31,3 % (P5 : −24,0 %) ; les lignes P1 et P5 reproduisent T5 et T10 ; P1 géré par la volatilité : Sharpe 0,73, drawdown maximal −27,7 %.
 9. **Erreurs potentielles** : aucune connue.
 
 ### Module lib — `lib.py` (fonctions communes)
